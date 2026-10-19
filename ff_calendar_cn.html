@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>外汇财经日历 · 多伦多时间</title>
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#121722; --card:#151b28; --line:#222b3d; --text:#e6eaf2; --muted:#8893a7; --dim:#5b6579;
+  --accent:#4f8cff; --gold:#f5c451; --green:#2ecc8f; --red:#ff5d6c;
+  --high:#ff4d5e; --med:#ff9f43; --low:#f5d04c; --none:#6b7589;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#16223d 0,transparent 60%),var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;font-size:14px}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{margin:0;font-size:22px;letter-spacing:.5px}
+h1 small{display:block;margin-top:4px;font-size:12px;color:var(--muted);font-weight:400}
+.right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.clock{text-align:right;font-variant-numeric:tabular-nums}
+.clock b{font-size:20px;color:var(--gold);display:block}
+.clock span{font-size:12px;color:var(--muted)}
+button{font:inherit;cursor:pointer}
+.btn{background:linear-gradient(135deg,#3b7bff,#6a5cff);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:600;
+  display:flex;align-items:center;gap:8px;box-shadow:0 6px 18px rgba(79,140,255,.28);transition:.15s}
+.btn:hover{transform:translateY(-1px)} .btn:disabled{opacity:.6;cursor:wait;transform:none}
+.spin{width:14px;height:14px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;display:none}
+.loading .spin{display:inline-block;animation:r .8s linear infinite} @keyframes r{to{transform:rotate(360deg)}}
+.status{font-size:12px;color:var(--muted);margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block}
+.dot.live{background:var(--green);box-shadow:0 0 8px var(--green)} .dot.cache{background:var(--gold)} .dot.snap{background:var(--accent)}
+.banner{background:#3a2a12;border:1px solid #6b4a14;color:#ffd48a;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px;display:none}
+.banner.err{background:#3a1620;border-color:#7a2434;color:#ffb3bd}
+.grid{display:grid;grid-template-columns:1.1fr 1.4fr;gap:14px;margin-bottom:16px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.card h3{margin:0 0 10px;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.5px}
+.next .t{font-size:16px;font-weight:600;margin-bottom:4px}
+.next .cd{font-size:28px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;margin:6px 0}
+.next .meta{color:var(--muted);font-size:12px}
+.heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pair{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.pair b{font-size:13px;letter-spacing:.3px}
+.pair .c{display:flex;gap:8px;margin-top:5px;font-size:12px;color:var(--muted)}
+.pair .c i{font-style:normal;display:inline-flex;align-items:center;gap:4px}
+.pair .c i:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--high)}
+.pair .c i.m:before{background:var(--med)}
+.pair.hot{border-color:#6d2a35;box-shadow:inset 0 0 0 1px #ff4d5e22}
+.edit{background:none;border:1px dashed var(--line);color:var(--muted);border-radius:8px;padding:2px 8px;font-size:12px;margin-left:8px}
+.filters{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px}
+.fg{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fg label{color:var(--muted);font-size:12px;margin-right:2px}
+.chip{background:var(--bg2);color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:999px;font-size:12px;transition:.12s;user-select:none}
+.chip.on{color:#fff;border-color:var(--accent);background:#1a2a4d}
+.chip.imp-H.on{border-color:var(--high);background:#3a1a22} .chip.imp-M.on{border-color:var(--med);background:#3a2a16}
+.chip.imp-L.on{border-color:var(--low);background:#38341a} .chip.imp-N.on{border-color:var(--none);background:#232a38}
+.day{margin-top:20px}
+.dayh{display:flex;align-items:baseline;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b0e14ee;backdrop-filter:blur(6px);z-index:5}
+.dayh b{font-size:16px} .dayh span{color:var(--muted);font-size:12px}
+.dayh .today-tag{background:var(--accent);color:#fff;font-weight:700;border-radius:6px;padding:1px 8px;font-size:11px}
+.cols,.row{display:grid;grid-template-columns:64px 52px 64px minmax(200px,1.7fr) 74px 74px 74px minmax(210px,1.5fr);gap:10px;align-items:center}
+.cols{color:var(--dim);font-size:11px;padding:8px 10px}
+.row{padding:10px;border-bottom:1px solid #1a2132;border-left:3px solid transparent;transition:.12s}
+.row:hover{background:#171e2d}
+.row.H{border-left-color:var(--high);background:linear-gradient(90deg,#ff4d5e12,transparent 40%)}
+.row.M{border-left-color:var(--med)} .row.L{border-left-color:#3a4358} .row.N{border-left-color:#2b3243}
+.row.past{opacity:.55} .row.next-up{outline:1px solid var(--gold);outline-offset:-1px;background:#2a2412}
+.time{font-variant-numeric:tabular-nums;font-weight:600} .time small{display:block;color:var(--dim);font-weight:400;font-size:10px}
+.cur{font-weight:700;font-size:12px;background:#1e2740;border-radius:6px;padding:2px 0;text-align:center}
+.badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;text-align:center}
+.badge.H{background:#ff4d5e22;color:var(--high)} .badge.M{background:#ff9f4322;color:var(--med)}
+.badge.L{background:#f5d04c1f;color:var(--low)} .badge.N{background:#6b758922;color:var(--none)}
+.title{font-weight:500} .title small{display:block;color:var(--dim);font-size:11px;margin-top:2px;font-weight:400}
+.num{font-variant-numeric:tabular-nums;text-align:right} .num.act{font-weight:700}
+.num.better{color:var(--green)} .num.worse{color:var(--red)} .num.empty{color:var(--dim)}
+.pairs{display:flex;flex-wrap:wrap;gap:4px}
+.p{font-size:11px;padding:2px 7px;border-radius:6px;background:#1b2234;color:var(--muted);border:1px solid #232c42}
+.p.mine{background:#2a2410;color:var(--gold);border-color:#6b5a1c;font-weight:700}
+.p.ind{border-style:dashed}
+.lbl{display:none}
+.empty-state{padding:40px;text-align:center;color:var(--muted)}
+footer{margin-top:30px;color:var(--dim);font-size:12px;line-height:1.7}
+@media(max-width:980px){
+  .cols{display:none}
+  .row{grid-template-columns:58px 48px 1fr 1fr 1fr;grid-template-areas:"t c b b b" "t e e e e" "a f p pp pp" "x x x x x"}
+  .row>.time{grid-area:t} .row>.cur{grid-area:c} .row>.badge{grid-area:b;justify-self:start}
+  .row>.title{grid-area:e} .row>.pairs{grid-area:x}
+  .lbl{display:block;font-size:10px;color:var(--dim)}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <h1>外汇财经日历<small>数据来源：Forex Factory · 全部时间已转换为多伦多时间（America/Toronto）</small></h1>
+    <div class="right">
+      <div class="clock"><b id="clock">--:--:--</b><span id="clockDate"></span></div>
+      <button class="btn" id="importBtn" style="background:#232c42;box-shadow:none">导入JSON</button>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+      <button class="btn" id="refresh"><span class="spin"></span><span id="refreshTxt">刷新数据</span></button>
+    </div>
+  </header>
+
+  <div class="status"><span class="dot snap" id="dot"></span><span id="statusTxt"></span></div>
+  <div class="banner" id="banner"></div>
+
+  <div class="grid">
+    <div class="card next" id="nextCard"></div>
+    <div class="card"><h3>我的品种 · 剩余高/中影响事件数 <button class="edit" id="editWatch">编辑品种</button></h3><div class="heat" id="heat"></div></div>
+  </div>
+
+  <div class="filters">
+    <div class="fg"><label>重要性</label>
+      <button class="chip imp-H on" data-imp="H">高</button><button class="chip imp-M on" data-imp="M">中</button>
+      <button class="chip imp-L on" data-imp="L">低</button><button class="chip imp-N" data-imp="N">假期/其他</button></div>
+    <div class="fg" id="curChips"><label>币种</label></div>
+    <div class="fg"><button class="chip" id="mineOnly">只看与我的品种相关</button><button class="chip" id="hidePast">隐藏已发布</button></div>
+  </div>
+
+  <div id="list"></div>
+
+  <footer>
+    说明：黄色标签＝你的自选品种，灰色＝其他可能受影响的品种，虚线边框＝间接影响。<br>
+    “实际值”绿色＝优于预期、红色＝劣于预期（失业类指标已反向处理）。内置快照中的重要性为人工估计；点击「刷新数据」后使用 Forex Factory 官方周历 JSON，重要性以官方为准。<br>
+    官方 JSON 不含“实际值”，刷新后已发布事件的实际值只保留内置快照中已有的部分。数据仅供参考，不构成投资建议。
+  </footer>
+</div>
+
+<script>
+// ===================== 内置快照（抓取自 forexfactory.com/calendar，原始时区 America/Chicago） =====================
+const SNAPSHOT_TAKEN = '2026-10-19T20:15:00Z'; // 2026-10-19 15:15 CDT
+// [芝加哥日期, 时间(HH:MM | D全天 | T待定), 币种, 事件, 实际, 预测, 前值, 重要性(估计)]
+const SNAP = [
+['2026-10-18','D','ALL','IMF Meetings','','','','L'],
+['2026-10-18','16:30','NZD','BusinessNZ Services Index','50.9','','51.0','L'],
+['2026-10-18','16:45','NZD','Trade Balance','-1971M','-775M','-1536M','L'],
+['2026-10-18','18:01','GBP','Rightmove HPI m/m','1.0%','','0.7%','L'],
+['2026-10-18','18:05','AUD','RBA Assist Gov Kent Speaks','','','','L'],
+['2026-10-18','20:30','CNY','New Home Prices m/m','-0.14%','','-0.17%','L'],
+['2026-10-18','21:00','CNY','Fixed Asset Investment ytd/y','-7.2%','-7.3%','-7.2%','L'],
+['2026-10-18','21:00','CNY','GDP q/y','4.5%','4.4%','4.3%','H'],
+['2026-10-18','21:00','CNY','Industrial Production y/y','5.5%','5.4%','5.2%','M'],
+['2026-10-18','21:00','CNY','NBS Press Conference','','','','L'],
+['2026-10-18','21:00','CNY','Retail Sales y/y','1.1%','0.5%','0.4%','M'],
+['2026-10-18','21:00','CNY','Unemployment Rate','5.2%','5.3%','5.3%','L'],
+['2026-10-18','23:30','JPY','Tertiary Industry Activity m/m','-0.1%','-0.3%','0.2%','L'],
+['2026-10-19','07:30','CAD','CPI m/m','0.1%','0.2%','-0.1%','H'],
+['2026-10-19','07:30','CAD','Median CPI y/y','1.9%','2.0%','2.0%','M'],
+['2026-10-19','07:30','CAD','Trimmed CPI y/y','1.8%','1.9%','1.9%','M'],
+['2026-10-19','07:30','CAD','Common CPI y/y','2.4%','2.6%','2.6%','M'],
+['2026-10-19','07:30','CAD','Core CPI m/m','0.0%','','0.1%','M'],
+['2026-10-19','09:00','USD','NAHB Housing Market Index','29','31','32','L'],
+['2026-10-19','10:30','CAD','BOC Business Outlook Survey','','','','M'],
+['2026-10-19','20:00','CNY','1-y Loan Prime Rate','','3.00%','3.00%','M'],
+['2026-10-19','20:00','CNY','5-y Loan Prime Rate','','3.50%','3.50%','M'],
+['2026-10-20','01:00','EUR','German PPI m/m','','1.5%','1.1%','L'],
+['2026-10-20','01:00','GBP','Average Earnings Index 3m/y','','3.8%','3.9%','H'],
+['2026-10-20','01:00','GBP','Claimant Count Change','','19.4K','27.8K','M'],
+['2026-10-20','01:00','GBP','Unemployment Rate','','4.9%','4.9%','H'],
+['2026-10-20','03:00','EUR','Current Account','','29.2B','27.6B','L'],
+['2026-10-20','04:00','EUR','German ZEW Economic Sentiment','','30.2','34.7','M'],
+['2026-10-20','04:00','EUR','ZEW Economic Sentiment','','23.6','25.8','M'],
+['2026-10-20','T','CNY','Foreign Direct Investment ytd/y','','','-5.3%','L'],
+['2026-10-20','T','GBP','10-y Bond Auction','','','5.38|3.3','L'],
+['2026-10-20','07:15','USD','ADP Weekly Employment Change','','','24.8K','M'],
+['2026-10-20','07:30','USD','Building Permits','','1.39M','1.40M','M'],
+['2026-10-20','07:30','USD','Housing Starts','','1.30M','1.28M','M'],
+['2026-10-20','09:00','USD','Pending Home Sales m/m','','-0.7%','0.3%','L'],
+['2026-10-20','T','NZD','GDT Price Index','','','1.2%','L'],
+['2026-10-20','12:00','GBP','MPC Member Greene Speaks','','','','L'],
+['2026-10-20','15:30','USD','API Weekly Statistical Bulletin','','','','L'],
+['2026-10-20','17:30','AUD','RBA Deputy Gov Hauser Speaks','','','','M'],
+['2026-10-20','18:50','JPY','Trade Balance','','-0.26T','-0.84T','L'],
+['2026-10-20','21:00','NZD','Credit Card Spending y/y','','','3.5%','L'],
+['2026-10-21','01:00','GBP','CPI y/y','','3.4%','3.1%','H'],
+['2026-10-21','01:00','GBP','Core CPI y/y','','2.8%','2.6%','M'],
+['2026-10-21','01:00','GBP','PPI Input m/m','','1.3%','0.3%','L'],
+['2026-10-21','01:00','GBP','PPI Output m/m','','0.7%','0.7%','L'],
+['2026-10-21','01:00','GBP','Public Sector Net Borrowing','','23.9B','18.3B','L'],
+['2026-10-21','01:00','GBP','RPI y/y','','3.9%','3.4%','L'],
+['2026-10-21','02:15','EUR','German Buba President Nagel Speaks','','','','L'],
+['2026-10-21','03:30','GBP','HPI y/y','','1.7%','1.4%','L'],
+['2026-10-21','05:00','EUR','German Buba Monthly Report','','','','L'],
+['2026-10-21','08:00','GBP','BOE Gov Bailey Speaks','','','','M'],
+['2026-10-21','09:30','USD','Crude Oil Inventories','','','-8.6M','M'],
+['2026-10-21','16:45','NZD','CPI q/q','','0.8%','1.5%','H'],
+['2026-10-22','02:30','CHF','Summary of Monetary Policy Discussions','','','','L'],
+['2026-10-22','05:00','GBP','CBI Industrial Order Expectations','','-20','-9','L'],
+['2026-10-22','07:30','CAD','IPPI m/m','','0.7%','1.3%','L'],
+['2026-10-22','07:30','CAD','NHPI m/m','','-0.1%','-0.1%','L'],
+['2026-10-22','07:30','CAD','RMPI m/m','','0.1%','3.1%','L'],
+['2026-10-22','07:30','USD','Unemployment Claims','','200K','199K','M'],
+['2026-10-22','09:00','EUR','Consumer Confidence','','-17','-17','L'],
+['2026-10-22','09:00','USD','CB Leading Index m/m','','-0.2%','-0.1%','L'],
+['2026-10-22','09:30','USD','Natural Gas Storage','','','67B','L'],
+['2026-10-22','17:00','AUD','Flash Manufacturing PMI','','','49.6','M'],
+['2026-10-22','17:00','AUD','Flash Services PMI','','','51.9','M'],
+['2026-10-22','18:01','GBP','GfK Consumer Confidence','','-14','-13','L'],
+['2026-10-22','18:30','JPY','National Core CPI y/y','','2.1%','1.7%','M'],
+['2026-10-22','19:30','JPY','Flash Manufacturing PMI','','54.5','54.1','M'],
+['2026-10-23','01:00','GBP','Retail Sales m/m','','-0.2%','0.5%','H'],
+['2026-10-23','02:15','EUR','French Flash Manufacturing PMI','','50.6','50.6','M'],
+['2026-10-23','02:15','EUR','French Flash Services PMI','','50.8','51.2','M'],
+['2026-10-23','02:30','EUR','German Flash Manufacturing PMI','','53.5','53.9','M'],
+['2026-10-23','02:30','EUR','German Flash Services PMI','','52.6','52.9','M'],
+['2026-10-23','03:00','EUR','Flash Manufacturing PMI','','52.7','52.9','H'],
+['2026-10-23','03:00','EUR','Flash Services PMI','','52.6','53.0','H'],
+['2026-10-23','03:30','GBP','Flash Manufacturing PMI','','51.8','51.9','M'],
+['2026-10-23','03:30','GBP','Flash Services PMI','','51.8','52.1','H'],
+['2026-10-23','07:30','CAD','Core Retail Sales m/m','','1.1%','-0.7%','H'],
+['2026-10-23','07:30','CAD','Retail Sales m/m','','1.3%','-0.7%','H'],
+['2026-10-23','08:00','EUR','Belgian NBB Business Climate','','-11.5','-12.1','L'],
+['2026-10-23','08:45','USD','Flash Manufacturing PMI','','55.5','55.9','H'],
+['2026-10-23','08:45','USD','Flash Services PMI','','58.0','58.8','H'],
+['2026-10-23','09:00','USD','Revised UoM Consumer Sentiment','','46.3','46.3','M'],
+['2026-10-23','09:00','USD','Revised UoM Inflation Expectations','','','4.7%','M'],
+['2026-10-24','20:00','CHF','Daylight Saving Time Shift','','','','N'],
+['2026-10-24','20:00','EUR','Daylight Saving Time Shift','','','','N'],
+['2026-10-24','20:00','GBP','Daylight Saving Time Shift','','','','N'],
+];
+function buildSnapshot(){
+  return SNAP.map(r=>{
+    const [y,m,d]=r[0].split('-').map(Number);
+    let h=0,mi=0,allday=false,tag='';
+    if(r[1]==='D'){allday=true;tag='全天'} else if(r[1]==='T'){allday=true;tag='待定'}
+    else {[h,mi]=r[1].split(':').map(Number)}
+    const ts=Date.UTC(y,m-1,d,h+5,mi); // 芝加哥 CDT = UTC-5
+    return {ts,allday,tag,cur:r[2],title:r[3],actual:r[4],forecast:r[5],previous:r[6],impact:r[7],est:true};
+  });
+}
+
+// ===================== 配置 =====================
+const TZ='America/Toronto';
+const FEED='https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+const E=encodeURIComponent;
+const SOURCES=[
+  ...(location.protocol.startsWith('http')&&location.hostname==='localhost'?['/feed']:[]),
+  FEED,
+  'https://corsproxy.io/?url='+E(FEED),
+  'https://api.allorigins.win/raw?url='+E(FEED),
+  'https://api.codetabs.com/v1/proxy?quest='+E(FEED),
+  'https://api.cors.lol/?url='+E(FEED),
+  'https://thingproxy.freeboard.io/fetch/'+FEED,
+  'https://r.jina.ai/'+FEED,
+  'https://corsproxy.org/?'+E(FEED),
+];
+const DEFAULT_WATCH=['GBPJPY','USDJPY','AUDJPY','EURUSD','EURGBP'];
+const EXTRA={
+  USD:['USDJPY','EURUSD','GBPUSD','AUDUSD','USDCAD','NZDUSD','USDCHF','XAUUSD'],
+  EUR:['EURUSD','EURGBP','EURJPY','EURAUD','EURCAD','EURCHF'],
+  GBP:['GBPUSD','GBPJPY','EURGBP','GBPAUD','GBPCAD','GBPCHF'],
+  JPY:['USDJPY','EURJPY','GBPJPY','AUDJPY','CADJPY','NZDJPY','CHFJPY'],
+  AUD:['AUDUSD','AUDJPY','EURAUD','GBPAUD','AUDNZD','AUDCAD'],
+  CAD:['USDCAD','CADJPY','EURCAD','GBPCAD','AUDCAD'],
+  NZD:['NZDUSD','NZDJPY','AUDNZD'],
+  CHF:['USDCHF','EURCHF','CHFJPY','GBPCHF'],
+  CNY:['AUDUSD','AUDJPY','NZDUSD'],
+};
+const IMP_LABEL={H:'高',M:'中',L:'低',N:'假期'};
+const WD=['周日','周一','周二','周三','周四','周五','周六'];
+
+// ===================== 中文翻译 =====================
+const TERMS=[
+ [/\bytd\/y\b/g,'年初至今同比'],[/\b3m\/y\b/g,'3个月同比'],[/\bm\/m\b/g,'月率'],[/\by\/y\b/g,'年率'],[/\bq\/q\b/g,'季率'],
+ [/Non-Farm Employment Change/g,'非农就业人数变化'],[/ADP Weekly Employment Change/g,'ADP周度就业变化'],[/ADP Non-Farm Employment Change/g,'ADP就业人数'],
+ [/Employment Change/g,'就业人数变化'],[/Unemployment Claims/g,'初请失业金人数'],[/Unemployment Rate/g,'失业率'],
+ [/Claimant Count Change/g,'申请失业金人数变化'],[/Average Earnings Index/g,'平均收入指数'],[/Average Hourly Earnings/g,'平均时薪'],
+ [/Core Retail Sales/g,'核心零售销售'],[/Retail Sales/g,'零售销售'],[/Core PCE Price Index/g,'核心PCE物价指数'],[/Core PPI/g,'核心PPI'],
+ [/Median CPI/g,'CPI中位数'],[/Trimmed CPI/g,'CPI截尾均值'],[/Common CPI/g,'CPI共同成分'],[/Core CPI/g,'核心CPI'],
+ [/PPI Input/g,'PPI投入'],[/PPI Output/g,'PPI产出'],
+ [/Flash Manufacturing PMI/g,'制造业PMI初值'],[/Flash Services PMI/g,'服务业PMI初值'],[/Manufacturing PMI/g,'制造业PMI'],[/Services PMI/g,'服务业PMI'],
+ [/ISM Manufacturing PMI/g,'ISM制造业PMI'],[/ISM Services PMI/g,'ISM服务业PMI'],
+ [/Trade Balance/g,'贸易差额'],[/Current Account/g,'经常账户'],[/Building Permits/g,'建筑许可'],[/Housing Starts/g,'新屋开工'],
+ [/Pending Home Sales/g,'成屋签约销售'],[/Existing Home Sales/g,'成屋销售'],[/New Home Sales/g,'新屋销售'],
+ [/NAHB Housing Market Index/g,'NAHB房产市场指数'],[/Crude Oil Inventories/g,'EIA原油库存'],[/Natural Gas Storage/g,'天然气库存'],
+ [/API Weekly Statistical Bulletin/g,'API周度库存报告'],[/Revised UoM Consumer Sentiment/g,'密歇根消费者信心(修正值)'],
+ [/Prelim UoM Consumer Sentiment/g,'密歇根消费者信心(初值)'],[/Revised UoM Inflation Expectations/g,'密歇根通胀预期(修正值)'],
+ [/Prelim UoM Inflation Expectations/g,'密歇根通胀预期(初值)'],[/GfK Consumer Confidence/g,'GfK消费者信心'],[/Consumer Confidence/g,'消费者信心'],
+ [/CB Leading Index/g,'谘商会领先指标'],[/CBI Industrial Order Expectations/g,'CBI工业订单预期'],
+ [/Industrial Production/g,'工业产出'],[/Fixed Asset Investment/g,'固定资产投资'],[/New Home Prices/g,'新建住宅价格'],
+ [/1-y Loan Prime Rate/g,'1年期LPR'],[/5-y Loan Prime Rate/g,'5年期LPR'],[/Foreign Direct Investment/g,'外商直接投资'],
+ [/Tertiary Industry Activity/g,'第三产业活动指数'],[/Credit Card Spending/g,'信用卡消费'],[/GDT Price Index/g,'GDT乳制品价格指数'],
+ [/BOC Business Outlook Survey/g,'加拿大央行商业前景调查'],[/BusinessNZ Services Index/g,'BusinessNZ服务业指数'],
+ [/Rightmove HPI/g,'Rightmove房价指数'],[/\bHPI\b/g,'房价指数'],[/ZEW Economic Sentiment/g,'ZEW经济景气指数'],
+ [/Business Climate/g,'商业景气指数'],[/Public Sector Net Borrowing/g,'公共部门净借款'],[/Bond Auction/g,'国债拍卖'],
+ [/Daylight Saving Time Shift/g,'夏令时切换'],[/IMF Meetings/g,'IMF会议'],[/Summary of Monetary Policy Discussions/g,'货币政策讨论摘要'],
+ [/Monetary Policy Statement/g,'货币政策声明'],[/Monetary Policy Report/g,'货币政策报告'],[/Monetary Policy Summary/g,'货币政策摘要'],
+ [/Official Bank Rate/g,'央行基准利率'],[/Federal Funds Rate/g,'联邦基金利率'],[/Cash Rate/g,'现金利率'],[/Overnight Rate/g,'隔夜利率'],
+ [/Main Refinancing Rate/g,'主要再融资利率'],[/Rate Statement/g,'利率声明'],[/Press Conference/g,'新闻发布会'],[/Meeting Minutes/g,'会议纪要'],
+ [/FOMC Statement/g,'FOMC声明'],[/Monthly Report/g,'月报'],[/Beige Book/g,'褐皮书'],[/Final GDP/g,'GDP终值'],[/Prelim GDP/g,'GDP初值'],[/\bGDP\b/g,'GDP'],
+ [/(\d+)-y\b/g,'$1年期'],
+ [/German/g,'德国'],[/French/g,'法国'],[/Italian/g,'意大利'],[/Spanish/g,'西班牙'],[/Belgian/g,'比利时'],[/National/g,'全国'],
+ [/Deputy Gov/g,'副行长'],[/Assist Gov/g,'助理行长'],[/\bGov\b/g,'行长'],[/Buba/g,'德国央行'],[/President/g,'行长/主席'],[/\bChair\b/g,'主席'],[/Member/g,'委员'],[/\bMPC\b/g,'货币政策委员'],
+ [/\bBOE\b/g,'英国央行'],[/\bBOC\b/g,'加拿大央行'],[/\bRBA\b/g,'澳洲联储'],[/\bRBNZ\b/g,'新西兰联储'],[/\bBOJ\b/g,'日本央行'],[/\bECB\b/g,'欧洲央行'],[/\bSNB\b/g,'瑞士央行'],[/\bFed\b/g,'美联储'],
+ [/Speaks/g,'讲话'],[/Flash/g,'初值'],[/Revised/g,'修正'],[/Prelim/g,'初值'],[/Final/g,'终值'],[/Statement/g,'声明'],
+];
+function zh(t){let s=t;for(const [re,r] of TERMS) s=s.replace(re,r);return s.replace(/\s+/g,' ').trim()}
+
+// ===================== 工具 =====================
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(opt)=>new Intl.DateTimeFormat('en-CA',{timeZone:TZ,hourCycle:'h23',...opt});
+function parts(ts){const o={};fmt({year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(ts)).forEach(p=>o[p.type]=p.value);return o}
+const dayKey=ts=>{const p=parts(ts);return `${p.year}-${p.month}-${p.day}`};
+const hm=ts=>{const p=parts(ts);return `${p.hour}:${p.minute}`};
+function dayLabel(key){const [y,m,d]=key.split('-').map(Number);const wd=new Date(Date.UTC(y,m-1,d,12)).getUTCDay();return {a:`${m}月${d}日`,b:WD[wd]}}
+function parseNum(s){
+  if(!s) return null; const m=String(s).trim().match(/^(-?\d+(?:\.\d+)?)\s*([KMBT%]?)/i); if(!m) return null;
+  const mult={K:1e3,M:1e6,B:1e9,T:1e12}[m[2].toUpperCase()]||1; return parseFloat(m[1])*mult;
+}
+function compare(e){
+  const a=parseNum(e.actual), f=parseNum(e.forecast); if(a==null||f==null||a===f) return '';
+  const inverse=/Unemployment|Claims|Claimant|Borrowing/i.test(e.title);
+  const better=inverse?a<f:a>f; return better?'better':'worse';
+}
+function curPairs(c){const s=new Set();return s}
+function currenciesOf(pair){return [pair.slice(0,3),pair.slice(3,6)]}
+function affects(e,pair){
+  if(e.cur==='ALL') return true;
+  const cs=currenciesOf(pair);
+  if(cs.includes(e.cur)) return true;
+  if(e.cur==='CNY') return cs.includes('AUD')||cs.includes('NZD'); // 间接
+  return false;
+}
+function pairInfo(e,watch){
+  if(e.cur==='ALL') return {mine:[],other:[],all:true};
+  const mine=watch.filter(p=>affects(e,p));
+  const other=(EXTRA[e.cur]||[]).filter(p=>!watch.includes(p));
+  return {mine,other,ind:e.cur==='CNY'};
+}
+
+// ===================== 状态 =====================
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let events=[], source='snap', updatedAt=SNAPSHOT_TAKEN;
+let watch=(()=>{try{const w=JSON.parse(store.get('ffcn_watch'));if(Array.isArray(w)&&w.length)return w}catch(e){}return DEFAULT_WATCH})();
+const filt={imp:new Set(['H','M','L']),cur:new Set(),mine:false,hidePast:false};
+
+function loadInitial(){
+  try{const c=JSON.parse(store.get('ffcn_cache')||'null'); if(c&&Array.isArray(c.events)&&c.events.length){events=c.events;source='cache';updatedAt=c.at;return}}catch(e){}
+  events=buildSnapshot();
+}
+
+// ===================== 刷新 =====================
+async function getJSON(url){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),15000);
+  try{const r=await fetch(url,{signal:ctl.signal,cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
+    const txt=await r.text(); const i=txt.indexOf('['), k=txt.lastIndexOf(']');
+    if(i<0||k<i) throw new Error('返回内容不是数据'); const j=JSON.parse(txt.slice(i,k+1));
+    if(!Array.isArray(j)||!j.length||!j[0].title) throw new Error('格式错误'); return j}
+  finally{clearTimeout(t)}
+}
+function normFeed(list){
+  const snap=buildSnapshot(); const act=new Map(snap.map(e=>[e.cur+'|'+e.title.toLowerCase()+'|'+e.ts,e.actual]));
+  return list.map(x=>{
+    const ts=new Date(x.date).getTime(); const cur=(x.country||'').toUpperCase()==='ALL'?'ALL':(x.country||'').toUpperCase();
+    const imp={High:'H',Medium:'M',Low:'L'}[x.impact]||'N';
+    const p=parts(ts); const allday=(p.hour==='00'&&p.minute==='00');
+    return {ts,allday,tag:allday?'全天/待定':'',cur,title:x.title||'',actual:act.get(cur+'|'+(x.title||'').toLowerCase()+'|'+ts)||'',forecast:x.forecast||'',previous:x.previous||'',impact:imp};
+  }).filter(e=>!isNaN(e.ts));
+}
+async function refresh(){
+  const btn=document.getElementById('refresh'); btn.disabled=true; btn.classList.add('loading'); document.getElementById('refreshTxt').textContent='获取中…';
+  banner('');
+  let ok=false; const errs=[];
+  try{
+    const j=await Promise.any(SOURCES.map(async u=>{
+      try{const r=await getJSON(u); if(!r.length) throw new Error('空数据'); return r}
+      catch(e){const host=u.startsWith('/')?'本地代理':new URL(u).hostname; errs.push(host+'：'+(e.name==='AbortError'?'超时':e.message)); throw e}
+    }));
+    const ev=normFeed(j); if(!ev.length) throw new Error('空数据');
+    events=ev; source='live'; updatedAt=new Date().toISOString(); store.set('ffcn_cache',JSON.stringify({at:updatedAt,events})); ok=true;
+  }catch(e){}
+  if(!ok) banner('所有在线线路都失败了（本地直接打开的网页受浏览器跨域限制，公共代理也常被封/限频）：<br>'+errs.map(esc).join('<br>')+'<br><b>最快的办法：</b><a href="'+FEED+'" target="_blank" style="color:#8fb4ff">点此打开数据页</a> → 全选复制 → 回到本页点右上角「导入JSON」粘贴，一次导入即可。已保留当前数据。',true);
+  btn.disabled=false; btn.classList.remove('loading'); document.getElementById('refreshTxt').textContent='刷新数据';
+  render();
+}
+function banner(msg,err){const b=document.getElementById('banner');b.style.display=msg?'block':'none';b.className='banner'+(err?' err':'');b.innerHTML=msg}
+
+// ===================== 渲染 =====================
+function visible(e){
+  if(!filt.imp.has(e.impact)) return false;
+  if(filt.cur.size && !filt.cur.has(e.cur)) return false;
+  if(filt.mine && !(e.cur==='ALL'||watch.some(p=>affects(e,p)))) return false;
+  if(filt.hidePast && e.ts<Date.now()-0) return false;
+  return true;
+}
+function renderStatus(){
+  const dot=document.getElementById('dot'); dot.className='dot '+(source==='live'?'live':source==='cache'?'cache':'snap');
+  const t=new Intl.DateTimeFormat('zh-CN',{timeZone:TZ,month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(updatedAt));
+  const name={live:'实时数据（官方周历 JSON）',cache:'上次刷新的缓存数据',snap:'内置快照（网页抓取，含已发布的实际值）'}[source];
+  document.getElementById('statusTxt').textContent=`${name} · 更新于 多伦多 ${t} · 共 ${events.length} 条事件`;
+  const maxTs=Math.max(...events.map(e=>e.ts));
+  if(source!=='live' && Date.now()>maxTs+3600e3) banner('当前数据已是上一周的，请点击右上角「刷新数据」获取本周日历。');
+}
+function renderCurChips(){
+  const box=document.getElementById('curChips'); const order=['USD','EUR','GBP','JPY','AUD','NZD','CAD','CHF','CNY'];
+  const present=[...new Set(events.map(e=>e.cur))].filter(c=>c!=='ALL').sort((a,b)=>{const i=order.indexOf(a),j=order.indexOf(b);return (i<0?99:i)-(j<0?99:j)});
+  box.innerHTML='<label>币种</label>'+present.map(c=>`<button class="chip ${filt.cur.has(c)?'on':''}" data-cur="${c}">${c}</button>`).join('');
+}
+function renderHeat(){
+  const now=Date.now();
+  document.getElementById('heat').innerHTML=watch.map(p=>{
+    const rel=events.filter(e=>e.ts>=now&&affects(e,p));
+    const h=rel.filter(e=>e.impact==='H').length, m=rel.filter(e=>e.impact==='M').length;
+    return `<div class="pair ${h>=2?'hot':''}"><b>${p}</b><div class="c"><i>高 ${h}</i><i class="m">中 ${m}</i></div></div>`;
+  }).join('');
+}
+let nextEv=null;
+function pickNext(){
+  const now=Date.now();
+  const up=events.filter(e=>e.ts>=now&&!e.allday&&e.impact==='H').sort((a,b)=>a.ts-b.ts);
+  const mine=up.find(e=>e.cur==='ALL'||watch.some(p=>affects(e,p)));
+  nextEv=mine||up[0]||null;
+}
+function renderNext(){
+  const c=document.getElementById('nextCard');
+  if(!nextEv){c.innerHTML='<h3>下一个高影响事件</h3><div class="meta" style="color:var(--muted)">当前数据中没有即将发布的高影响事件</div>';return}
+  const e=nextEv, info=pairInfo(e,watch);
+  const pairs=(info.mine.length?info.mine:(info.other||[]).slice(0,4)).map(p=>`<span class="p ${info.mine.length?'mine':''}">${p}</span>`).join('');
+  const d=dayLabel(dayKey(e.ts));
+  c.innerHTML=`<h3>下一个高影响事件</h3><div class="t"><span class="cur" style="padding:2px 8px;margin-right:6px">${e.cur}</span>${esc(zh(e.title))}</div>
+  <div class="meta">${esc(e.title)}</div><div class="cd" id="cd">--</div>
+  <div class="meta">${d.a} ${d.b} ${hm(e.ts)}（多伦多）　预测 ${esc(e.forecast||'-')} · 前值 ${esc(e.previous||'-')}</div>
+  <div class="pairs" style="margin-top:8px">${pairs}</div>`;
+}
+function tickCountdown(){
+  const el=document.getElementById('cd'); if(!el||!nextEv) return;
+  let s=Math.floor((nextEv.ts-Date.now())/1000); if(s<0){pickNext();renderNext();render();return}
+  const d=Math.floor(s/86400); s%=86400; const h=Math.floor(s/3600); s%=3600; const m=Math.floor(s/60); s%=60;
+  const z=n=>String(n).padStart(2,'0'); el.textContent=(d?d+'天 ':'')+`${z(h)}:${z(m)}:${z(s)}`;
+}
+function renderList(){
+  const now=Date.now();
+  const list=events.filter(visible).sort((a,b)=>(dayKey(a.ts)<dayKey(b.ts)?-1:dayKey(a.ts)>dayKey(b.ts)?1:0)||((b.allday?1:0)-(a.allday?1:0))||a.ts-b.ts);
+  const box=document.getElementById('list');
+  if(!list.length){box.innerHTML='<div class="empty-state">没有符合筛选条件的事件</div>';return}
+  const today=dayKey(now); const groups={};
+  list.forEach(e=>{(groups[dayKey(e.ts)] ||= []).push(e)});
+  let html='<div class="cols"><span>时间</span><span>币种</span><span>重要性</span><span>事件</span><span class="num">实际</span><span class="num">预测</span><span class="num">前值</span><span>主要影响品种</span></div>';
+  for(const k of Object.keys(groups).sort()){
+    const d=dayLabel(k); const g=groups[k]; const hi=g.filter(e=>e.impact==='H').length;
+    html+=`<div class="day"><div class="dayh"><b>${d.a}</b><span>${d.b}</span>${k===today?'<span class="today-tag">今天</span>':''}<span>· ${g.length} 条${hi?`，其中 <b style="color:var(--high);font-size:12px">${hi}</b> 条高影响`:''}</span></div>`;
+    for(const e of g){
+      const info=pairInfo(e,watch); const past=e.ts<now&&!e.allday; const cmp=compare(e);
+      let pairs='';
+      if(info.all) pairs='<span class="p mine">全部品种 / 风险情绪</span>';
+      else{
+        pairs=info.mine.map(p=>`<span class="p mine ${info.ind?'ind':''}">${p}</span>`).join('')+info.other.map(p=>`<span class="p ${info.ind?'ind':''}">${p}</span>`).join('');
+      }
+      const timeCell=e.allday?`<span class="time" style="color:var(--muted)">${e.tag||'待定'}</span>`:`<span class="time">${hm(e.ts)}</span>`;
+      const isNext=nextEv&&e===nextEv;
+      html+=`<div class="row ${e.impact} ${past?'past':''} ${isNext?'next-up':''}">
+        <div>${timeCell}</div><div class="cur">${esc(e.cur==='ALL'?'全部':e.cur)}</div><div class="badge ${e.impact}" ${e.est?'title="内置快照中的重要性为估计值，刷新/导入后以官方为准"':''}>${IMP_LABEL[e.impact]}${e.est?'<small style="opacity:.7;font-weight:400"> 估</small>':''}</div>
+        <div class="title">${esc(zh(e.title))}<small>${esc(e.title)}</small></div>
+        <div class="num act ${cmp} ${e.actual?'':'empty'}"><span class="lbl">实际</span>${esc(e.actual||'–')}</div>
+        <div class="num ${e.forecast?'':'empty'}"><span class="lbl">预测</span>${esc(e.forecast||'–')}</div>
+        <div class="num ${e.previous?'':'empty'}"><span class="lbl">前值</span>${esc(e.previous||'–')}</div>
+        <div class="pairs">${pairs}</div></div>`;
+    }
+    html+='</div>';
+  }
+  box.innerHTML=html;
+}
+function render(){pickNext();renderStatus();renderCurChips();renderHeat();renderNext();renderList();tickCountdown()}
+
+// ===================== 交互 =====================
+document.getElementById('refresh').onclick=refresh;
+function applyImport(text){
+  try{const j=JSON.parse(text); const ev=normFeed(j); if(!ev.length) throw new Error('空数据');
+    events=ev; source='live'; updatedAt=new Date().toISOString(); store.set('ffcn_cache',JSON.stringify({at:updatedAt,events})); banner(''); render();
+  }catch(e){banner('导入失败：内容不是有效的周历 JSON（'+esc(e.message)+'）',true)}
+}
+document.getElementById('importBtn').onclick=()=>{
+  const t=prompt('粘贴 JSON 内容（点「取消」可改为选择 .json 文件）：');
+  if(t===null) document.getElementById('importFile').click(); else if(t.trim()) applyImport(t);
+};
+document.getElementById('importFile').onchange=e=>{const f=e.target.files[0]; if(f) f.text().then(applyImport)};
+document.querySelectorAll('[data-imp]').forEach(b=>b.onclick=()=>{const k=b.dataset.imp;filt.imp.has(k)?filt.imp.delete(k):filt.imp.add(k);b.classList.toggle('on');renderList()});
+document.getElementById('curChips').onclick=e=>{const b=e.target.closest('[data-cur]');if(!b)return;const c=b.dataset.cur;filt.cur.has(c)?filt.cur.delete(c):filt.cur.add(c);b.classList.toggle('on');renderList()};
+document.getElementById('mineOnly').onclick=e=>{filt.mine=!filt.mine;e.target.classList.toggle('on');renderList()};
+document.getElementById('hidePast').onclick=e=>{filt.hidePast=!filt.hidePast;e.target.classList.toggle('on');renderList()};
+document.getElementById('editWatch').onclick=()=>{
+  const v=prompt('输入你的品种，用逗号分隔（例如 GBPJPY,USDJPY,AUDJPY,EURUSD,EURGBP）：',watch.join(','));
+  if(v===null) return; const w=v.toUpperCase().split(/[,，\s]+/).map(s=>s.replace(/[^A-Z]/g,'')).filter(s=>s.length===6);
+  if(w.length){watch=[...new Set(w)];store.set('ffcn_watch',JSON.stringify(watch));render()}
+};
+function tickClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,hourCycle:'h23',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(now);
+  const d=new Intl.DateTimeFormat('zh-CN',{timeZone:TZ,year:'numeric',month:'long',day:'numeric',weekday:'long',timeZoneName:'short'}).format(now);
+  document.getElementById('clockDate').textContent='多伦多 · '+d; tickCountdown();
+}
+loadInitial(); render(); tickClock(); setInterval(tickClock,1000);
+</script>
+</body>
+</html>
